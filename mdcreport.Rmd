@@ -41,7 +41,7 @@ ggplot(mdcdata, aes(x = Flavor, fill = Flavor)) +
 ```
 
 
-#Here are some bar charts that compare the number of orders and cumulative revenue of orders for each client and client type. I filtered the data to show clients and client types that have made at least 25 orders to MDC
+#Here are some bar charts that compare the number of orders and cumulative revenue of orders for each client and client type. I filtered the data to show clients and client types that have made at least *** orders to MDC
 
 ```{r, echo = FALSE}
 
@@ -74,7 +74,7 @@ ggplot(mdcdata, aes(x = Price.Type, y = Total.Revenue.per.Item)) +
 
 
 ```
-#BOAR and RAIN are certainly your top clients. BOAR has placed more orders to MDC, but RAIN has generated the most revenue for MDC. Private labels are your number 2 client type for revenue behind Rainforest. BOAR is third highest revenue generating client type while wholesale is a close fourth. Ecommerce and Vending Distributors seem to be significant client types as well
+#**** and **** are certainly your top clients. **** has placed more orders to MDC, but **** has generated the most revenue for MDC. ****** ******* are your number 2 client type for revenue behind *****. ****** is third highest revenue generating client type while ******* is a close fourth. ****** and ******** seem to be significant client types as well
 
 ```{r, echo=FALSE, include=FALSE}
 tsdata <- mdcdata %>%
@@ -131,7 +131,7 @@ ggplot(mdcdata, aes(x = as.numeric(Lbs.of.Potatoes), y = Total.Revenue.per.Item)
 
 ```
 
-#The data point that is >250 lbs of potatoes and above $1000 in revenue is interesting
+#The data point that is >***** lbs of potatoes and above $********* in revenue is interesting
 
 
 #I chose to do a simple linear regression with lbs of potatoes as the dependent variable and Total revenue per order as the independent variable
@@ -142,7 +142,7 @@ mdcdata$Lbs.of.Potatoes <- as.numeric(mdcdata$Lbs.of.Potatoes)
 summary(lm(Lbs.of.Potatoes ~ Total.Revenue.per.Item, data = na.omit(mdcdata)))
 
 ```
-#For each dollar of revenue, you should expect to use 0.476289 pounds of potatoes
+#For each dollar of revenue, you should expect to use ******** pounds of potatoes
 
 
 
