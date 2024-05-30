@@ -1,0 +1,187 @@
+---
+title: "MDCproj"
+author: "Kevin Donohue"
+date: "2023-09-28"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r, echo = FALSE,include=FALSE}
+#??forecast
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+mdcdata <- read.csv("C:/Users/kevin/OneDrive/Desktop/MDC/mdcdata.csv")
+mdcdata <- rename(mdcdata, POnumber = "PO..")
+View(mdcdata)
+```
+
+
+
+#Here is a bar chart of the flavor distribution of orders in the whole dataset.
+#note that this does not account for number of bags in order or size of bags in order, simply the flavor tied to each order.
+
+```{r, echo = FALSE}
+color_df <- data.frame(Flavor = c("BBQ", "COMBO", "FRENCH", "JALASR", "OG", "SBV", "SURF"),
+                       FillColor = c("orange", "black", "purple", "green", "yellow", "blue", "pink"))
+
+ggplot(mdcdata, aes(x = Flavor, fill = Flavor)) +
+  geom_bar() +
+  labs(title = "Flavor Distribution",
+       x = "Flavor",
+       y = "Count") + scale_y_continuous(breaks = c(0, 200, 400, 600)) +
+  expand_limits(y = c(0,600)) +
+  scale_fill_manual(values = color_df$FillColor)
+```
+
+
+#Here are some bar charts that compare the number of orders and cumulative revenue of orders for each client and client type. I filtered the data to show clients and client types that have made at least 25 orders to MDC
+
+```{r, echo = FALSE}
+
+bestcustomer <- mdcdata %>%
+  group_by(Client.ID) %>%
+  filter(n() >= 25) %>%
+  ungroup()
+
+
+ggplot(bestcustomer, aes(x = Client.ID)) +
+  geom_bar(fill = "orange") +
+  labs(title = "# of Orders per Client",
+       x = "Client",
+       y = "Count")
+
+ggplot(bestcustomer, aes(x = Client.ID, y = Total.Revenue.per.Item)) +
+  geom_bar(stat = "summary", fun = "sum", fill = "orange") +
+  labs(title = "Total Revenue per Client",
+       x = "Client",
+       y = "Total Revenue")
+
+
+
+ggplot(mdcdata, aes(x = Price.Type, y = Total.Revenue.per.Item)) +
+  geom_bar(stat = "summary", fun = "sum", fill = "orange") +
+  labs(title = "Total Revenue per Client Type",
+       x = "Client Type",
+       y = "Total Revenue") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+
+```
+#BOAR and RAIN are certainly your top clients. BOAR has placed more orders to MDC, but RAIN has generated the most revenue for MDC. Private labels are your number 2 client type for revenue behind Rainforest. BOAR is third highest revenue generating client type while wholesale is a close fourth. Ecommerce and Vending Distributors seem to be significant client types as well
+
+```{r, echo=FALSE, include=FALSE}
+tsdata <- mdcdata %>%
+  group_by(Order.Date) %>%
+  summarize(Total.Revenue.per.Order = sum(Total.Revenue.per.Item)) %>%
+  mutate(Order.Date = mdy(Order.Date)) %>%
+  arrange(Order.Date)
+
+tsdata$CumulativeRevenue <- cumsum(tsdata$Total.Revenue.per.Order)
+view(tsdata)
+```
+
+
+
+#The graph below shows Revenue by order date
+
+```{r, echo = FALSE}
+mdc.ts <- ts(tsdata$Total.Revenue.per.Order, start=c(1,1), freq = 5)
+plot(mdc.ts, type="l", xlab="Time", ylab="Revenue Series",main="Total Revenue by Order Date")
+
+```
+#The graph above doesn't tell us much, it just shows that there has been an increase in number of orders per day/size of orders per day over time
+
+
+
+#The Graph below shows the time series plot of cumulative revenue
+
+```{r, echo = FALSE}
+
+mdc.ts2 <- ts(tsdata$CumulativeRevenue, start=c(1,1), freq = 5)
+#plot(mdc.ts2, type="l", xlab="Time", ylab="Cumulative Revenue Series",main="Total Cumulative Revenue by Order Date")
+
+
+ggplot(tsdata, aes(x = Order.Date, y = CumulativeRevenue)) +
+  geom_line() +
+  labs(x = "Order Date", y = "Cumulative Revenue") +
+  ggtitle("Time Series Line Plot of Cumulative Revenue by Order Date")
+```
+#The rate at which cumulative revenue is increasing is increasing which is a good sign. I hope to make a forecast of this trend in the future.
+
+
+
+
+#The graph below shows the relationship between total revenue per order and pounds of potatoes. Obviously these two variables are heavily correlated
+
+```{r, echo=FALSE}
+ggplot(mdcdata, aes(x = as.numeric(Lbs.of.Potatoes), y = Total.Revenue.per.Item)) +
+  geom_point(color = "orange") +
+  labs(x = "Pounds of Potatoes", y = "Total Revenue per Item") +
+  ggtitle("Scatterplot of Total Revenue per Order vs. Pounds of Potatoes") +
+   theme(axis.text.x = element_text(size = 9, angle = 45, hjust = 1)) + scale_x_continuous(breaks = c(0, 250, 500, 750, 1000)) +
+  expand_limits(x = c(0,1000))
+
+
+```
+
+#The data point that is >250 lbs of potatoes and above $1000 in revenue is interesting
+
+
+#I chose to do a simple linear regression with lbs of potatoes as the dependent variable and Total revenue per order as the independent variable
+
+```{r, echo = FALSE}
+mdcdata$Lbs.of.Potatoes <- as.numeric(mdcdata$Lbs.of.Potatoes)
+
+summary(lm(Lbs.of.Potatoes ~ Total.Revenue.per.Item, data = na.omit(mdcdata)))
+
+```
+#For each dollar of revenue, you should expect to use 0.476289 pounds of potatoes
+
+
+
+#I wanted to see the flavor distribution after the date that jalapeno sriracha and french onion were released to see how these new flavors were doing in comparison to the others. 
+
+```{r, echo = FALSE}
+newflavdata <- mdcdata %>% 
+  filter(POnumber >= 412)
+
+color_df <- data.frame(Flavor = c("BBQ", "COMBO", "FRENCH", "JALASR", "OG", "SBV", "SURF"),
+                       FillColor = c("orange", "black", "purple", "green", "yellow", "blue", "pink"))
+
+ggplot(newflavdata, aes(x = Flavor, fill = Flavor)) +
+  geom_bar() +
+  labs(title = "Flavor Distribution",
+       x = "Flavor",
+       y = "Count") +
+  scale_fill_manual(values = color_df$FillColor)
+```
+#Since the new flavors were released, (FRNCH and JALASR) OG is obviously the favorite, and your clients may have stuck with ordering BBQ and SBV because they were used to them, however it seems the new flavors are doing alright. This graph was made with a small chunk of data so there isn't a whole lot to take away from it.
+
+
+
+
+
+
+
+
+```{r}
+ggplot(mdcdata, aes(x = Flavor, fill = as.character(Bag.Size))) +
+  geom_bar() +
+  labs(title = "Flavor Distribution for Bag Weights",
+       x = "Bag Weight",
+       y = "Count",
+       fill = "Bag Size") +
+  scale_x_discrete(drop = FALSE) 
+```
+
+```{r}
+
+```
+
